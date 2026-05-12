@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HealthRisk Sim — Round Evaluation | HCMT3006 UDST</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#F4F6FA;color:#0A1628;min-height:100vh;padding:20px 16px 40px}
+.page{max-width:700px;margin:0 auto}
+
+/* TOP BAR */
+.top{background:#002A5C;border-radius:12px;padding:16px 20px;margin-bottom:14px}
+.top-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.top-sub{font-size:12px;color:#80B4D4;margin-bottom:12px}
+.round-sel{display:flex;gap:7px;flex-wrap:wrap}
+.rb{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:7px;padding:6px 13px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;transition:all .15s;font-family:Arial,sans-serif}
+.rb:hover{background:rgba(255,255,255,.22)}
+.rb.on{background:#00AEEF;border-color:#00AEEF;color:#002A5C}
+
+/* INFO BAR */
+.info-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.ib{background:#fff;border:1px solid #E0E4EA;border-radius:8px;padding:10px 13px}
+.ib-l{font-size:10px;color:#6B7A8D;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em}
+.ib-v{font-size:13px;font-weight:600;color:#002A5C}
+
+/* QUESTION CARDS */
+.q-card{background:#fff;border:1.5px solid #E0E4EA;border-radius:10px;padding:13px 15px;margin-bottom:9px;transition:border-color .15s}
+.q-card.answered{border-color:#00AEEF}
+.q-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:11px}
+.q-num{min-width:26px;height:26px;border-radius:50%;background:#002A5C;color:#00AEEF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.q-text{font-size:13px;font-weight:600;color:#002A5C;line-height:1.5}
+.q-badge{font-size:10px;background:#EBF2FB;color:#0C447C;padding:2px 7px;border-radius:4px;font-weight:700;display:inline-block;margin-top:4px}
+.scale{display:flex;gap:6px}
+.sc{flex:1;padding:8px 4px;border-radius:7px;border:1.5px solid #E0E4EA;cursor:pointer;text-align:center;transition:all .15s;background:#fff;user-select:none}
+.sc:hover{border-color:#00AEEF;background:#EBF2FB}
+.sc.sel{border-color:#002A5C;background:#002A5C}
+.sc-n{font-size:15px;font-weight:700;color:#002A5C}
+.sc.sel .sc-n{color:#fff}
+.sc-l{font-size:9px;color:#6B7A8D;margin-top:2px}
+.sc.sel .sc-l{color:rgba(255,255,255,.7)}
+.scale-ends{display:flex;justify-content:space-between;margin-top:5px}
+.se{font-size:10px;color:#6B7A8D;font-style:italic}
+
+/* REFLECTION */
+.ref-box{background:#fff;border:1px solid #E0E4EA;border-radius:10px;padding:13px 15px;margin-bottom:14px}
+.ref-box label{display:block;font-size:13px;font-weight:600;color:#002A5C;margin-bottom:7px}
+.ref-box textarea{width:100%;border:1px solid #ddd;border-radius:7px;padding:9px 11px;font-size:13px;font-family:Arial,sans-serif;resize:vertical;min-height:60px;background:#F4F6FA;color:#0A1628}
+.ref-box textarea:focus{outline:none;border-color:#00AEEF;background:#fff}
+
+/* SUBMIT */
+.sub-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.sub-btn{padding:10px 24px;background:#002A5C;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif}
+.sub-btn:hover{background:#003A7A}
+.sub-btn:disabled{opacity:.35;cursor:not-allowed}
+.prog{font-size:12px;color:#6B7A8D}
+
+/* RESULTS */
+.result-card{border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.result-card.great{background:#E1F5EE;border:2px solid #1A7A4A}
+.result-card.good{background:#EBF2FB;border:2px solid #185FA5}
+.result-card.ok{background:#FFF3CD;border:2px solid #C8A951}
+.result-card.low{background:#FCEBEB;border:2px solid #C0392B}
+.result-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.score-circle{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;flex-shrink:0}
+.score-circle.great{background:#1A7A4A}
+.score-circle.good{background:#185FA5}
+.score-circle.ok{background:#C8A951}
+.score-circle.low{background:#C0392B}
+.sc-num{font-size:24px;font-weight:700;color:#fff;line-height:1}
+.sc-denom{font-size:11px;color:rgba(255,255,255,.75)}
+.result-head h3{font-size:16px;font-weight:700;margin-bottom:3px}
+.result-card.great .result-head h3,.result-card.great .result-head p,.result-card.great .fb-pos,.result-card.great .rh-next{color:#085041}
+.result-card.good .result-head h3,.result-card.good .result-head p,.result-card.good .fb-pos,.result-card.good .rh-next{color:#0C447C}
+.result-card.ok .result-head h3,.result-card.ok .result-head p,.result-card.ok .fb-pos,.result-card.ok .rh-next{color:#633806}
+.result-card.low .result-head h3,.result-card.low .result-head p,.result-card.low .fb-pos,.result-card.low .rh-next{color:#7B241C}
+.result-head p{font-size:12px;line-height:1.55;margin-top:2px}
+.fb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.fb-item{border-radius:7px;padding:9px 10px;font-size:11px;line-height:1.5}
+.fb-item.pos{background:rgba(26,122,74,.12);color:#085041}
+.fb-item.neg{background:rgba(192,57,43,.1);color:#7B241C}
+.fb-item strong{display:block;font-size:11px;margin-bottom:2px}
+.refl-display{margin-top:9px;padding:9px 11px;background:rgba(0,42,92,.07);border-radius:7px;font-size:12px;color:#444}
+.refl-display strong{color:#002A5C}
+.reset-btn{padding:9px 20px;background:#fff;color:#002A5C;border:1.5px solid #E0E4EA;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif;margin-top:8px}
+.reset-btn:hover{background:#F4F6FA}
+.next-hint{background:#EBF2FB;border:1px solid #B5D4F4;border-radius:8px;padding:9px 12px;font-size:12px;color:#0C447C;margin-top:10px}
+.prog-bar-wrap{background:#E0E4EA;border-radius:4px;height:6px;margin-top:8px;overflow:hidden}
+.prog-bar{height:100%;border-radius:4px;background:#00AEEF;transition:width .4s}
+
+/* COMPLETED BADGE */
+.done-badge{font-size:10px;padding:2px 7px;border-radius:4px;background:#E1F5EE;color:#1A7A4A;font-weight:700;display:inline-block}
+
+@media(max-width:500px){
+  .info-bar{grid-template-columns:1fr}
+  .fb-grid{grid-template-columns:1fr}
+  .scale{gap:4px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="top">
+  <div class="top-title">HealthRisk Sim — Round Evaluation</div>
+  <div class="top-sub">Quick self-assessment · Less than 5 minutes · HCMT3006 · UDST College of Business · Spring 2026</div>
+  <div class="round-sel" id="roundSel"></div>
+</div>
+
+<div class="info-bar" id="infoBar"></div>
+<div id="mainContent"></div>
+
+</div>
+
+<script>
+var ROUNDS=[
+  {n:1,phase:"Risk Identification",domain:"Operational Risk",tool:"Risk Register (ASHRM ERM Taxonomy)",ashrm:"ASHRM ERM Framework (2020)"},
+  {n:2,phase:"Risk Assessment",domain:"Clinical / Patient Safety",tool:"Risk Matrix (5×5) + FMEA Table",ashrm:"ASHRM Patient Safety Toolkit"},
+  {n:3,phase:"Mitigation & Control",domain:"Financial & Legal/Regulatory",tool:"Hierarchy of Controls (5 levels)",ashrm:"ASHRM Risk Financing Fundamentals"},
+  {n:4,phase:"Monitoring & Communication",domain:"All 8 ASHRM Domains",tool:"KRI Dashboard (Traffic Light System)",ashrm:"ASHRM ERM Self-Assessment Tool"},
+  {n:5,phase:"Evaluation & Learning",domain:"Human Capital",tool:"SBAR / Stakeholder Map + RCA",ashrm:"ASHRM Communication Toolkit"}
+];
+
+var QS=[
+  {id:"q1",text:"I clearly understood the goal of this round and the ASHRM ERM domain it focused on.",bloom:"Remember / Understand",tag:"Round Understanding",
+   tip_low:"Re-read the round situation and identify the correct ASHRM ERM domain before writing your report.",
+   tip_high:"Good — you understand the scope of this round."},
+  {id:"q2",text:"I can explain WHY my team chose each decision — not just what we chose.",bloom:"Analysis & Evaluation",tag:"Decision Justification",
+   tip_low:'For each decision, write: "We chose X because [ASHRM principle / case evidence]." Never just say "we chose A."',
+   tip_high:"Strong justification — keep citing ASHRM and case evidence in your report."},
+  {id:"q3",text:"I used the CORRECT RM tool for this round and applied it to the case with real data — not just named it.",bloom:"Apply",tag:"RM Tool Application",
+   tip_low:"Practice applying the round's RM tool to real case data (risk IDs, L and C scores, RPN numbers). Naming the tool alone = 0 marks.",
+   tip_high:"Correct tool applied well — include real case data in your report."},
+  {id:"q4",text:"I connected at least ONE specific Qatar law or healthcare body (MoPH, QCHP, Law No. 22/2021, QNV 2030) to my team's decisions.",bloom:"Apply",tag:"Qatar Context",
+   tip_low:"Name one specific Qatar body or law in every report and link it directly to one of your decisions. Generic mention = partial marks only.",
+   tip_high:"Qatar context included and linked — good regulatory awareness."},
+  {id:"q5",text:"My round report is well-structured, clear, within 2 pages, and includes at least 2 APA 7th references.",bloom:"Remember / Evaluate",tag:"Writing & Format",
+   tip_low:"Check: headings present, max 2 pages, Decision Sheet as Appendix, minimum 2 APA 7th references. Format = 15 marks.",
+   tip_high:"Report format is on track — maintain this standard every round."}
+];
+
+var SCALE=[{v:1,l:"Not at all"},{v:2,l:"Slightly"},{v:3,l:"Mostly"},{v:4,l:"Fully"}];
+
+var curRound=1;
+var answers={};   // {1:{q1:3,q2:4,...}, 2:{...}}
+var submitted={};
+var reflections={};
+
+function render(){renderRoundSel();renderInfoBar();renderMain();}
+
+function renderRoundSel(){
+  var el=document.getElementById('roundSel');
+  el.innerHTML=ROUNDS.map(function(r){
+    var done=submitted[r.n]?'<span class="done-badge">✓</span>':'';
+    return '<button class="rb'+(curRound===r.n?' on':'')+'" onclick="setRound('+r.n+')">Round '+r.n+' '+done+'</button>';
+  }).join('');
+}
+
+function renderInfoBar(){
+  var r=ROUNDS[curRound-1];
+  document.getElementById('infoBar').innerHTML=
+    '<div class="ib"><div class="ib-l">RM Phase</div><div class="ib-v">'+r.phase+'</div></div>'+
+    '<div class="ib"><div class="ib-l">ASHRM ERM Domain</div><div class="ib-v">'+r.domain+'</div></div>'+
+    '<div class="ib"><div class="ib-l">Round RM Tool</div><div class="ib-v" style="color:#002A5C">'+r.tool+'</div></div>';
+}
+
+function renderMain(){
+  var mc=document.getElementById('mainContent');
+  if(submitted[curRound]){mc.innerHTML=renderResult();return;}
+
+  var ans=answers[curRound]||{};
+  var ref=reflections[curRound]||'';
+  var answered=Object.keys(ans).length;
+  var allDone=answered===QS.length;
+  var pct=Math.round(answered/QS.length*100);
+
+  var html='';
+
+  // Progress bar
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html+='<span style="font-size:12px;color:#6B7A8D">Progress: '+answered+' / '+QS.length+' answered</span>';
+  html+='</div>';
+  html+='<div class="prog-bar-wrap"><div class="prog-bar" style="width:'+pct+'%"></div></div>';
+  html+='<div style="margin-bottom:12px"></div>';
+
+  QS.forEach(function(q,i){
+    var sel=ans[q.id];
+    html+='<div class="q-card'+(sel?' answered':'')+'">';
+    html+='<div class="q-top">';
+    html+='<div class="q-num">'+(i+1)+'</div>';
+    html+='<div><div class="q-text">'+q.text+'</div>';
+    html+='<div><span class="q-badge">'+q.tag+'</span> <span style="font-size:10px;color:#6B7A8D;font-style:italic">Bloom\'s: '+q.bloom+'</span></div>';
+    html+='</div></div>';
+    html+='<div class="scale">';
+    SCALE.forEach(function(s){
+      html+='<div class="sc'+(sel===s.v?' sel':'')+'" onclick="setAns(\''+q.id+'\','+s.v+')">';
+      html+='<div class="sc-n">'+s.v+'</div>';
+      html+='<div class="sc-l">'+s.l+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+    html+='<div class="scale-ends"><span class="se">1 = Not at all</span><span class="se">4 = Fully</span></div>';
+    html+='</div>';
+  });
+
+  // Reflection
+  html+='<div class="ref-box">';
+  html+='<label>One reflection (optional) — What was most challenging this round? What will you do differently?</label>';
+  html+='<textarea id="refBox" placeholder="Write 1–2 sentences..." onchange="saveRef(this.value)">'+ref+'</textarea>';
+  html+='</div>';
+
+  html+='<div class="sub-row">';
+  html+='<button class="sub-btn" onclick="submitRound()" '+(allDone?'':'disabled')+'>'+(allDone?'Submit evaluation':'Answer all '+QS.length+' questions to submit')+'</button>';
+  if(!allDone)html+='<span class="prog">'+answered+' / '+QS.length+' answered</span>';
+  html+='</div>';
+
+  mc.innerHTML=html;
+}
+
+function renderResult(){
+  var ans=answers[curRound]||{};
+  var r=ROUNDS[curRound-1];
+  var total=QS.reduce(function(s,q){return s+(ans[q.id]||0);},0);
+  var maxScore=QS.length*4;
+  var pct=Math.round(total/maxScore*100);
+  var tier=pct>=85?'great':pct>=65?'good':pct>=45?'ok':'low';
+  var labels={great:'Excellent preparation for your report!',good:'Good work — a few gaps to close.',ok:'Some areas need more attention.',low:'Review this round before writing your report.'};
+  var descs={
+    great:'You have a strong grasp of '+r.phase+' and the '+r.tool+'. Your round report should score highly — keep this standard.',
+    good:'Most areas are solid. Review any items rated 2 or below before writing the round report. The ASHRM resources can help.',
+    ok:'Several areas need attention. Re-read the case materials and the '+r.ashrm+' resource before writing your report.',
+    low:'This round needs significant review. Speak to your instructor and study the '+r.ashrm+' resource carefully before submitting.'
+  };
+
+  var fbHtml='<div class="fb-grid">';
+  QS.forEach(function(q){
+    var v=ans[q.id]||0;
+    var isPos=v>=3;
+    var tip=isPos?q.tip_high:q.tip_low;
+    fbHtml+='<div class="fb-item '+(isPos?'pos':'neg')+'"><strong>'+(isPos?'✓ ':'⚠ ')+q.tag+'</strong>'+tip+'</div>';
+  });
+  fbHtml+='</div>';
+
+  var ref=reflections[curRound]||'';
+  var refHtml=ref?'<div class="refl-display"><strong>Your reflection:</strong> '+ref+'</div>':'';
+
+  // Next round hint
+  var nextRound=curRound<5?'<div class="next-hint">Next: When you are ready, switch to <strong>Round '+(curRound+1)+'</strong> to complete that evaluation.</div>':'<div class="next-hint">You have completed all 5 rounds. Good luck with your final summary report and presentation!</div>';
+
+  return '<div class="result-card '+tier+'">'
+    +'<div class="result-top">'
+    +'<div class="score-circle '+tier+'"><div class="sc-num">'+pct+'%</div><div class="sc-denom">'+total+'/'+maxScore+'</div></div>'
+    +'<div class="result-head"><h3>'+labels[tier]+'</h3><p>'+descs[tier]+'</p></div>'
+    +'</div>'
+    +fbHtml
+    +refHtml
+    +'</div>'
+    +nextRound
+    +'<button class="reset-btn" onclick="resetRound()">Re-take Round '+curRound+' evaluation</button>';
+}
+
+function setRound(n){curRound=n;render();}
+
+function setAns(qid,val){
+  if(!answers[curRound])answers[curRound]={};
+  answers[curRound][qid]=val;
+  renderMain();
+}
+
+function saveRef(v){reflections[curRound]=v;}
+
+function submitRound(){
+  var rb=document.getElementById('refBox');
+  if(rb)reflections[curRound]=rb.value;
+  submitted[curRound]=true;
+  renderMain();
+  renderRoundSel();
+}
+
+function resetRound(){
+  delete submitted[curRound];
+  delete answers[curRound];
+  delete reflections[curRound];
+  renderMain();
+  renderRoundSel();
+}
+
+render();
+</script>
+</body>
+</html>
