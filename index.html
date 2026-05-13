@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HealthRisk Sim — Round Evaluation | HCMT3006 UDST</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --navy:#002A5C;--cyan:#00AEEF;--gold:#C8A951;--white:#fff;
+  --off:#F4F6FA;--border:#E0E6EF;--text:#0A1628;--muted:#6B7A8D;
+  --green:#1A7A4A;--red:#C0392B;--amber:#D4860A;
+  --green-bg:#E1F5EE;--red-bg:#FCEBEB;--amber-bg:#FFF3CD;--blue-bg:#EBF2FB;
+  --shadow:0 2px 12px rgba(0,42,92,.10);--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--off);color:var(--text);min-height:100vh}
+.page{max-width:780px;margin:0 auto;padding:16px 14px 48px}
+.wide{max-width:1100px;margin:0 auto;padding:16px 14px 48px}
+.topbar{background:var(--navy);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.topbar h1{font-size:17px;font-weight:700;color:var(--white);margin-bottom:1px}
+.topbar p{font-size:11px;color:#80B4D4}
+.btn{padding:7px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.bg{background:rgba(255,255,255,.12);color:var(--white);border:1.5px solid rgba(255,255,255,.25)}
+.bg:hover{background:rgba(255,255,255,.22)}
+.bn{background:var(--navy);color:var(--white)}.bn:hover{background:#003A7A}
+.bc{background:var(--cyan);color:var(--navy)}.bc:hover{background:#00c4ff}
+.br{background:var(--red);color:var(--white)}.br:hover{opacity:.88}
+.bgo{background:var(--green);color:var(--white)}.bgo:hover{opacity:.88}
+.bam{background:var(--amber-bg);color:var(--amber);border:1px solid #F0D080}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.section-hdr{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--border)}
+.alert{border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;display:flex;gap:8px}
+.ai{background:var(--blue-bg);border:1px solid #B5D4F4;color:#0C447C}
+.as{background:var(--green-bg);border:1px solid #9FD8B8;color:#085041}
+.aw{background:var(--amber-bg);border:1px solid #F0D080;color:#633806}
+.ae{background:var(--red-bg);border:1px solid #F5B8B0;color:#7B241C}
+.rounds-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.rb{background:var(--white);border:2px solid var(--border);border-radius:var(--r);padding:12px 6px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.rb:hover:not(.locked):not(.done):not(.active){border-color:var(--cyan);background:var(--blue-bg)}
+.rb.active{border-color:var(--navy);background:var(--navy)}
+.rb.locked{opacity:.45;cursor:not-allowed;background:#F8F9FB}
+.rb.done{border-color:var(--green);background:var(--green-bg)}
+.rb .rn{font-size:20px;font-weight:800;color:var(--navy);line-height:1}
+.rb.active .rn{color:var(--cyan)}.rb.done .rn{color:var(--green)}
+.rb .rl{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.3}
+.rb.active .rl{color:#80B4D4}.rb.done .rl{color:var(--green)}
+.rb .badge{position:absolute;top:-7px;right:-7px;width:19px;height:19px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.badge-done{background:var(--green);color:var(--white)}
+.badge-lock{background:var(--muted);color:var(--white)}
+.info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.chip{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.chip .cl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.chip .cv{font-size:13px;font-weight:600;color:var(--navy)}
+.q-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;transition:border-color .15s}
+.q-card.answered{border-color:var(--cyan)}
+.q-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px}
+.q-num{min-width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.q-text{font-size:13px;font-weight:600;color:var(--navy);line-height:1.5}
+.q-tag{display:inline-block;font-size:10px;background:var(--off);color:var(--muted);padding:2px 7px;border-radius:4px;font-weight:600;margin-top:4px}
+.scale-row{display:flex;gap:6px}
+.sc{flex:1;padding:8px 4px;border-radius:7px;border:1.5px solid var(--border);cursor:pointer;text-align:center;transition:all .15s;background:var(--white);user-select:none}
+.sc:hover{border-color:var(--cyan);background:var(--blue-bg)}
+.sc.sel{border-color:var(--navy);background:var(--navy)}
+.sc .sn{font-size:16px;font-weight:700;color:var(--navy)}
+.sc .sl{font-size:9px;color:var(--muted);margin-top:2px}
+.sc.sel .sn,.sc.sel .sl{color:var(--white)}
+.se{font-size:10px;color:var(--muted);font-style:italic}
+.reft{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px;margin-bottom:14px}
+.reft label{display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:7px}
+.reft textarea{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 11px;font-size:13px;font-family:inherit;resize:vertical;min-height:62px;background:var(--off);color:var(--text)}
+.reft textarea:focus{outline:none;border-color:var(--cyan);background:var(--white)}
+.prog-bg{background:var(--border);border-radius:4px;height:5px;overflow:hidden;margin-top:5px}
+.prog-fill{height:100%;border-radius:4px;background:var(--cyan);transition:width .4s}
+/* Dashboard */
+.dash-hdr{background:var(--navy);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.dash-hdr h2{font-size:18px;font-weight:700;color:var(--white)}
+.dash-hdr p{font-size:12px;color:#80B4D4}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.sc2{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center;box-shadow:var(--shadow)}
+.sc2 .sv{font-size:26px;font-weight:800;color:var(--navy);line-height:1}
+.sc2 .sl2{font-size:11px;color:var(--muted);margin-top:3px}
+.rc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.rc{background:var(--white);border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center}
+.rc.open{border-color:var(--green)}
+.rc .rv{font-size:18px;font-weight:800;color:var(--navy)}
+.rc .rph{font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3}
+.rc .rst{font-size:11px;font-weight:700;margin-bottom:5px}
+.rc.open .rst{color:var(--green)}.rc .rst{color:var(--muted)}
+.tgl{width:100%;padding:6px 4px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.tgl-o{background:var(--green-bg);color:var(--green);border:1px solid #9FD8B8}
+.tgl-o:hover{background:#c8eedd}
+.tgl-c{background:var(--red-bg);color:var(--red);border:1px solid #F5B8B0}
+.tgl-c:hover{background:#f8d0cc}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .15s}
+.tab.active{background:var(--navy);border-color:var(--navy);color:var(--white)}
+.tab .tc{background:var(--cyan);color:var(--navy);border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px}
+.tab.active .tc{background:rgba(255,255,255,.2);color:var(--white)}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-lbl{width:115px;font-size:11px;color:var(--muted);flex-shrink:0}
+.bar-bg2{flex:1;background:var(--border);border-radius:3px;height:15px;overflow:hidden}
+.bar-f{height:100%;border-radius:3px;transition:width .6s}
+.bar-v{width:42px;text-align:right;font-size:12px;font-weight:700;color:var(--navy);flex-shrink:0}
+.dist-row{display:flex;gap:8px;margin-top:4px}
+.dc{flex:1;text-align:center}
+.db-wrap{height:56px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3px}
+.db{width:28px;border-radius:4px 4px 0 0;min-height:4px;transition:height .5s}
+.dn{font-size:11px;font-weight:700;color:var(--navy)}
+.dl{font-size:9px;color:var(--muted)}
+.ab{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700}
+.ab4{background:var(--green-bg);color:var(--green)}
+.ab3{background:var(--blue-bg);color:#185FA5}
+.ab2{background:var(--amber-bg);color:var(--amber)}
+.ab1{background:var(--red-bg);color:var(--red)}
+.empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+/* Login */
+.login-wrap{max-width:390px;margin:60px auto 0}
+.login-box{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:32px;box-shadow:var(--shadow)}
+.login-box h2{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:20px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--navy);margin-bottom:5px}
+.fg input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:14px;font-family:inherit;background:var(--off)}
+.fg input:focus{outline:none;border-color:var(--cyan)}
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.spin{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:500px){.stat-grid,.rc-grid{grid-template-columns:repeat(3,1fr)}.info-row{grid-template-columns:1fr 1fr}.scale-row{gap:4px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════════════
+// ▶  CONFIGURATION — edit these two sections
+// ═══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBa8eZth9lNSqIZHqKsqk94Qd7uwFiXZ8s",
+  authDomain:        "simulation-evaluation.firebaseapp.com",
+  databaseURL:       "https://simulation-evaluation-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "simulation-evaluation",
+  storageBucket:     "simulation-evaluation.firebasestorage.app",
+  messagingSenderId: "506428308692",
+  appId:             "1:506428308692:web:5ddf69fd3a5eff70f38f41",
+  measurementId:     "G-EHNSNJ9R5R"
+};
+const INST_PW = "UDST2026"; // Change this to your own password
+
+// ═══════════════════════════════════════════════
+// COURSE DATA
+// ═══════════════════════════════════════════════
+const ROUNDS=[
+  {n:1,phase:"Risk Identification",      domain:"Operational",         tool:"Risk Register"},
+  {n:2,phase:"Risk Assessment",          domain:"Clinical/Pat. Safety", tool:"Risk Matrix + FMEA"},
+  {n:3,phase:"Mitigation & Control",     domain:"Financial & Legal",    tool:"Hierarchy of Controls"},
+  {n:4,phase:"Monitoring & Comm.",       domain:"All 8 Domains",        tool:"KRI Dashboard"},
+  {n:5,phase:"Evaluation & Learning",    domain:"Human Capital",        tool:"SBAR + RCA"},
+];
+const QS=[
+  {id:"q2",tag:"Round Understanding",  crit:"Criterion 1 /20",
+   text:"I clearly understood the goal of this round and the ASHRM ERM domain it focused on."},
+  {id:"q3",tag:"Decision Justification",crit:"Criterion 2 /25",
+   text:"I can explain WHY my team chose each decision — not just WHAT we chose."},
+  {id:"q4",tag:"RM Tool Application",  crit:"Criterion 3 /25",
+   text:"I used the CORRECT RM tool for this round AND applied it to real case data — not just named it."},
+  {id:"q5",tag:"Qatar Context",         crit:"Criterion 4 /15",
+   text:"I connected at least ONE specific Qatar regulation or body (MoPH, Law No. 22/2021, QNV 2030) to our decisions."},
+  {id:"q6",tag:"Writing & Format",      crit:"Criteria 5+6 /15",
+   text:"My round report is clear, within 2 pages, and includes at least 2 APA 7th edition references."},
+];
+const TIPS={
+  q2:{lo:"Re-read the round situation. Identify the correct ASHRM ERM domain before writing your report.",hi:"You understand the round scope — good."},
+  q3:{lo:"Write: 'We chose X because [ASHRM evidence].' Never just list what you chose.",hi:"Strong justification — keep citing ASHRM evidence."},
+  q4:{lo:"Apply the tool to REAL case data (Risk IDs, L/C scores, RPN numbers). Naming only = 0 marks.",hi:"Correct tool applied well — include real data in your report."},
+  q5:{lo:"Name one specific Qatar law or body and LINK it directly to one of your decisions.",hi:"Qatar context included and linked — good regulatory awareness."},
+  q6:{lo:"Check: max 2 pages, Decision Sheet in Appendix, minimum 2 APA 7th edition references.",hi:"Report format is on track — maintain this standard."},
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+var db=null, fbOK=false;
+var S={
+  view:"loading",       // loading|setup|student|instructor|instlogin
+  sid:null,
+  curRound:null,
+  answers:{},
+  reflection:"",
+  submitting:false,
+  submitted:{},         // {roundNum:true}
+  roundSettings:{},     // {n:{open:bool}}
+  allSubs:{},           // {roundNum:{studentId:{...}}}
+  instTab:1,
+  err:null,
+};
+
+// ═══════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════
+function initFB(){
+  try{
+    if(FIREBASE_CONFIG.apiKey.indexOf("PASTE")===0){S.view="setup";render();return;}
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.database();fbOK=true;
+    var sid=localStorage.getItem("hcmt3006_sid");
+    if(!sid){sid="S_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);localStorage.setItem("hcmt3006_sid",sid);}
+    S.sid=sid;
+    db.ref("settings/rounds").on("value",function(snap){
+      var d=snap.val()||{};
+      ROUNDS.forEach(function(r){S.roundSettings[r.n]=d[r.n]||{open:false};});
+      render();
+    });
+    db.ref("submissions").on("value",function(snap){
+      var d=snap.val()||{};
+      S.allSubs=d;
+      S.submitted={};
+      ROUNDS.forEach(function(r){if(d[r.n]&&d[r.n][S.sid])S.submitted[r.n]=true;});
+      if(S.view==="loading")S.view="student";
+      render();
+    });
+  }catch(e){S.view="setup";S.err=e.message;render();}
+}
+
+// ═══════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════
+function selRound(n){
+  if(!S.roundSettings[n]||!S.roundSettings[n].open)return;
+  if(S.submitted[n])return;
+  S.curRound=n;S.answers={};S.reflection="";S.err=null;render();
+}
+function setAns(qid,val){S.answers[qid]=val;render();}
+
+function submitEval(){
+  var n=S.curRound;
+  if(!n||S.submitting)return;
+  S.submitting=true;render();
+  var payload={timestamp:Date.now(),round:n,reflection:S.reflection||"",studentId:S.sid};
+  QS.forEach(function(q){payload[q.id]=S.answers[q.id]||0;});
+  db.ref("submissions/"+n+"/"+S.sid).set(payload).then(function(){
+    S.submitted[n]=true;S.curRound=null;S.submitting=false;render();
+  }).catch(function(e){
+    S.err="Submission failed: "+e.message;S.submitting=false;render();
+  });
+}
+function toggleRound(n){
+  var cur=S.roundSettings[n]||{open:false};
+  db.ref("settings/rounds/"+n).set({open:!cur.open});
+}
+function setTab(n){S.instTab=n;render();}
+function goInst(){S.view="instructor";render();}
+function goStudent(){S.view="student";render();}
+function showLogin(){S.view="instlogin";render();}
+function tryLogin(){
+  var pw=document.getElementById("ipw").value;
+  if(pw===INST_PW){goInst();}
+  else{document.getElementById("ierr").style.display="flex";}
+}
+function exportCSV(){
+  var rows=[["Round","Phase","Student ID","Q2 Understanding","Q3 Justification","Q4 RM Tool","Q5 Qatar","Q6 Writing","Total /20","Reflection","Submitted"]];
+  ROUNDS.forEach(function(r){
+    var subs=S.allSubs[r.n]||{};
+    Object.values(subs).forEach(function(s){
+      var tot=(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0)+(s.q6||0);
+      rows.push([r.n,r.phase,s.studentId||"anon",s.q2||"",s.q3||"",s.q4||"",s.q5||"",s.q6||"",tot,(s.reflection||"").replace(/,/g," "),new Date(s.timestamp||0).toLocaleString()]);
+    });
+  });
+  var csv=rows.map(function(r){return r.join(",");}).join("\n");
+  var a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="HCMT3006_RoundEval_Responses.csv";
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function render(){
+  var app=document.getElementById("app");
+  if(!app)return;
+  if(S.view==="loading")    {app.innerHTML='<div class="page"><div class="loading"><div class="spin"></div><br>Connecting to database…</div></div>';return;}
+  if(S.view==="setup")      {app.innerHTML=rSetup();return;}
+  if(S.view==="instlogin")  {app.innerHTML=rLogin();return;}
+  if(S.view==="instructor") {app.innerHTML=rInst();return;}
+  app.innerHTML=rStudent();
+}
+
+// ── SETUP ────────────────────────────────────────────────────────────────────
+function rSetup(){
+  var steps=[
+    ["1","Go to Firebase Console","Visit <strong>console.firebase.google.com</strong> and sign in with your Google account."],
+    ["2","Create a project","Click <strong>Add project</strong>. Name it <em>hcmt3006-eval</em>. Disable Analytics. Click Create."],
+    ["3","Create Realtime Database","Build → Realtime Database → Create database → pick region → Start in <strong>test mode</strong>."],
+    ["4","Get your config","⚙️ gear → Project Settings → Your apps → click &#60;/&#62; → Register app → copy the firebaseConfig object."],
+    ["5","Paste into this file","Open index.html in a text editor. Find <code>FIREBASE_CONFIG = {</code> and replace all PASTE_YOUR_…_HERE values with your real values. Save and re-upload to GitHub."],
+    ["6","Change instructor password","Find <code>const INST_PW</code> and change from UDST2026 to your own password. Save and re-upload."],
+  ];
+  var stepsHTML=steps.map(function(s){return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)"><div style="min-width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+s[0]+'</div><div><strong style="font-size:13px;color:var(--navy)">'+s[1]+'</strong><br><span style="font-size:12px;color:var(--muted)">'+s[2]+'</span></div></div>';}).join("");
+  return '<div class="page"><div class="topbar"><div><h1>HealthRisk Sim — Round Evaluation</h1><p>HCMT3006 · UDST · Setup Required</p></div></div>'+(S.err?'<div class="alert ae"><span>⚠️</span><div>Firebase error: '+S.err+'</div></div>':'')+'<div class="alert aw"><span>⚙️</span><div><strong>Firebase setup required</strong> — Follow the steps below once, then re-upload to GitHub. Takes about 10 minutes.</div></div><div class="card"><div class="section-hdr">Setup Steps</div>'+stepsHTML+'</div><div class="card"><div class="section-hdr">Firebase Security Rules (paste into Firebase Console → Realtime Database → Rules)</div><pre style="background:#1A2A3A;color:#A8D8EA;padding:14px;border-radius:8px;font-size:11px;overflow-x:auto">{\n  "rules": {\n    "submissions": {\n      "$round": {\n        "$studentId": {\n          ".read": true,\n          ".write": true\n        }\n      }\n    },\n    "settings": {\n      ".read": true,\n      ".write": true\n    }\n  }\n}</pre><p style="font-size:11px;color:var(--muted);margin-top:8px">These open rules work for a class setting. Students cannot see each other\'s full data because the app only reads their own student ID path.</p></div></div>';
+}
+
+// ── LOGIN ────────────────────────────────────────────────────────────────────
+function rLogin(){
+  return '<div class="page"><div class="login-wrap"><div class="login-box"><div style="font-size:32px;margin-bottom:10px">🏥</div><h2>Instructor Login</h2><p>HCMT3006 · HealthRisk Sim Dashboard</p><div class="fg"><label>Password</label><input type="password" id="ipw" placeholder="Enter instructor password" onkeydown="if(event.key===\'Enter\')tryLogin()"></div><div id="ierr" class="alert ae" style="display:none;margin-bottom:12px"><span>⚠️</span><div>Incorrect password. Please try again.</div></div><button class="btn bn" onclick="tryLogin()" style="width:100%;padding:11px;font-size:14px">Login to Dashboard</button><button class="btn" onclick="goStudent()" style="width:100%;padding:9px;margin-top:8px;background:var(--off);color:var(--muted)">← Back to Student View</button></div></div></div>';
+}
+
+// ── STUDENT VIEW ─────────────────────────────────────────────────────────────
+function rStudent(){
+  var cur=S.curRound, rs=S.roundSettings, sub=S.submitted, ans=S.answers;
+  var openCnt=ROUNDS.filter(function(r){return rs[r.n]&&rs[r.n].open;}).length;
+  var doneCnt=ROUNDS.filter(function(r){return sub[r.n];}).length;
+  var allAns=QS.every(function(q){return ans[q.id];});
+
+  var html='<div class="page"><div class="topbar"><div><h1>HealthRisk Sim — Round Evaluation</h1><p>HCMT3006 · UDST College of Business · Spring 2026 · Anonymous</p></div><button class="btn bg" onclick="showLogin()" style="font-size:11px;padding:5px 10px">Instructor Login</button></div>';
+
+  if(S.err)html+='<div class="alert ae"><span>⚠️</span>'+S.err+'</div>';
+
+  // Round grid
+  html+='<div class="rounds-grid">';
+  ROUNDS.forEach(function(r){
+    var open=rs[r.n]&&rs[r.n].open, done=sub[r.n], active=cur===r.n;
+    var cls="rb"+(active?" active":done?" done":!open?" locked":"");
+    var badge=done?'<div class="badge badge-done">✓</div>':(!open?'<div class="badge badge-lock">🔒</div>':"");
+    var oc=(open&&!done&&!active)?'onclick="selRound('+r.n+')"':"";
+    html+='<div class="'+cls+'" '+oc+'>'+badge+'<div class="rn">'+r.n+'</div><div class="rl">'+r.phase.split(" ").slice(0,2).join(" ")+'</div></div>';
+  });
+  html+='</div>';
+
+  // Info row
+  html+='<div class="info-row"><div class="chip"><div class="cl">Rounds Open</div><div class="cv" style="color:var(--green)">'+openCnt+' of 5</div></div><div class="chip"><div class="cl">Your Completions</div><div class="cv">'+doneCnt+' of 5</div></div><div class="chip"><div class="cl">Status</div><div class="cv" style="font-size:12px">'+(cur?"Round "+cur+" in progress":doneCnt===5?"All complete! 🎉":"Select an open round")+'</div></div></div>';
+
+  if(!cur){
+    // No round selected
+    if(openCnt===0){
+      html+='<div class="alert ai"><span>🔒</span><div><strong>No rounds are open yet.</strong> Your instructor will open Round 1 after your first simulation session. Return here after each round to complete your evaluation.</div></div>';
+    } else if(doneCnt<5){
+      html+='<div class="alert ai"><span>ℹ️</span><div>Select an open round (🟢) above to start your evaluation. You have <strong>one attempt per round</strong>. Complete this immediately after each session.</div></div>';
+    }
+    // Completed summaries
+    ROUNDS.forEach(function(r){
+      if(!sub[r.n])return;
+      var s=S.allSubs[r.n]&&S.allSubs[r.n][S.sid];
+      if(!s)return;
+      var tot=(s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0)+(s.q6||0);
+      var pct=Math.round(tot/20*100);
+      var cls=pct>=85?"ab4":pct>=65?"ab3":pct>=45?"ab2":"ab1";
+      html+='<div class="card" style="border-left:4px solid var(--green)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:var(--navy)">✓ Round '+r.n+' — '+r.phase+'</span><span class="ab '+cls+'">'+pct+'%</span></div><div style="display:flex;gap:10px;flex-wrap:wrap">'+QS.map(function(q){return '<span style="font-size:11px;color:var(--muted)">'+q.tag+': <strong style="color:var(--navy)">'+(s[q.id]||'—')+'/4</strong></span>';}).join('')+'</div></div>';
+    });
+    return html+'</div>';
+  }
+
+  // Round in progress
+  var rInfo=ROUNDS[cur-1];
+  html+='<div class="card" style="border-left:4px solid var(--cyan)"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><div style="font-size:16px;font-weight:700;color:var(--navy)">Round '+cur+' — '+rInfo.phase+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Domain: '+rInfo.domain+' &nbsp;|&nbsp; Tool: <strong style="color:var(--navy)">'+rInfo.tool+'</strong></div></div><button class="btn bg" style="background:var(--off);color:var(--navy);border-color:var(--border);font-size:12px;padding:5px 12px" onclick="S.curRound=null;render()">← Back</button></div></div>';
+
+  var ansCnt=QS.filter(function(q){return ans[q.id];}).length;
+  html+='<div style="margin-bottom:12px"><span style="font-size:12px;color:var(--muted)">'+ansCnt+' / '+QS.length+' answered</span><div class="prog-bg"><div class="prog-fill" style="width:'+Math.round(ansCnt/QS.length*100)+'%"></div></div></div>';
+
+  QS.forEach(function(q,i){
+    var sel=ans[q.id];
+    html+='<div class="q-card'+(sel?' answered':'')+'"><div class="q-head"><div class="q-num">'+(i+1)+'</div><div><div class="q-text">'+q.text+'</div><span class="q-tag">'+q.tag+'</span> <span style="font-size:10px;color:var(--muted);font-style:italic">'+q.crit+'</span></div></div><div class="scale-row">'+[1,2,3,4].map(function(v){return '<div class="sc'+(sel===v?' sel':'')+'" onclick="setAns(\''+q.id+'\','+v+')"><div class="sn">'+v+'</div><div class="sl">'+(v===1?"Not at all":v===2?"Slightly":v===3?"Mostly":"Fully")+'</div></div>';}).join('')+'</div><div style="display:flex;justify-content:space-between;margin-top:4px"><span class="se">1 = Not at all</span><span class="se">4 = Fully</span></div></div>';
+  });
+
+  html+='<div class="reft"><label>Optional — What was most challenging? What will you do differently next round?</label><textarea id="rfb" placeholder="1–2 sentences…" oninput="S.reflection=this.value">'+S.reflection+'</textarea></div>';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><button class="btn bn" onclick="submitEval()" '+(allAns&&!S.submitting?'':'disabled')+' style="padding:11px 26px;font-size:14px">'+(S.submitting?"Submitting…":allAns?"Submit evaluation":"Answer all "+QS.length+" questions to submit")+'</button>'+(ansCnt<QS.length?'<span style="font-size:12px;color:var(--muted)">'+ansCnt+'/'+QS.length+' answered</span>':'')+'</div>';
+
+  return html+'</div>';
+}
+
+// ── INSTRUCTOR DASHBOARD ─────────────────────────────────────────────────────
+function rInst(){
+  var subs=S.allSubs, rs=S.roundSettings, tab=S.instTab;
+  var unique=new Set();
+  ROUNDS.forEach(function(r){Object.keys(subs[r.n]||{}).forEach(function(k){unique.add(k);});});
+  var totalSubs=ROUNDS.reduce(function(acc,r){return acc+Object.keys(subs[r.n]||{}).length;},0);
+
+  var html='<div class="wide">';
+  html+='<div class="dash-hdr"><div><h2>Instructor Dashboard</h2><p>HealthRisk Sim · HCMT3006 · UDST · Spring 2026</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportCSV()" style="background:var(--green-bg);color:var(--green);border:1px solid #9FD8B8">⬇ Export CSV</button><button class="btn br" onclick="goStudent()">← Student View</button></div></div>';
+
+  // Global stats
+  html+='<div class="stat-grid"><div class="sc2"><div class="sv">'+unique.size+'</div><div class="sl2">Unique Students</div></div><div class="sc2"><div class="sv">'+totalSubs+'</div><div class="sl2">Total Submissions</div></div>'+ROUNDS.map(function(r){var n=Object.keys(subs[r.n]||{}).length;var open=rs[r.n]&&rs[r.n].open;return '<div class="sc2"><div class="sv" style="color:'+(open?"var(--green)":"var(--navy)")+'">'+n+'</div><div class="sl2">Round '+r.n+' '+(open?"● Open":"● Closed")+'</div></div>';}).join('')+'</div>';
+
+  // Round control
+  html+='<div class="card"><div class="section-hdr">🔓 Round Access Control — Open / Close Each Round</div><div class="alert aw" style="margin-bottom:12px"><span>⚠️</span><div>Students can ONLY access rounds you have <strong>opened</strong>. Once submitted, a student cannot re-take that round.</div></div><div class="rc-grid">'+ROUNDS.map(function(r){var open=rs[r.n]&&rs[r.n].open;var cnt=Object.keys(subs[r.n]||{}).length;return '<div class="rc'+(open?" open":"")+'"><div class="rv">'+r.n+'</div><div class="rph">'+r.phase+'</div><div class="rst">'+(open?"● OPEN":"● CLOSED")+'</div><div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+cnt+' submitted</div><button class="tgl '+(open?"tgl-c":"tgl-o")+'" onclick="toggleRound('+r.n+')">'+(open?"Close Round":"Open Round")+'</button></div>';}).join('')+'</div></div>';
+
+  // Tabs
+  html+='<div class="tabs">'+ROUNDS.map(function(r){var n=Object.keys(subs[r.n]||{}).length;return '<button class="tab'+(tab===r.n?" active":'')+'" onclick="setTab('+r.n+')">Round '+r.n+'<span class="tc">'+n+'</span></button>';}).join('')+'</div>';
+
+  // Round detail
+  var rSubs=Object.values(subs[tab]||{});
+  var rInfo=ROUNDS[tab-1];
+  html+='<div class="card"><div class="section-hdr">Round '+tab+' — '+rInfo.phase+' &nbsp;|&nbsp; '+rSubs.length+' submissions</div>';
+
+  if(rSubs.length===0){
+    html+='<div class="empty">No submissions yet for Round '+tab+'.</div>';
+  } else {
+    // Averages
+    html+='<div style="margin-bottom:18px"><strong style="font-size:13px;color:var(--navy)">Average ratings per criterion (1–4 scale)</strong><div style="margin-top:10px">';
+    QS.forEach(function(q){
+      var vals=rSubs.map(function(s){return s[q.id];}).filter(Boolean);
+      var avg=vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(2):"—";
+      var pct=vals.length?(parseFloat(avg)/4*100):0;
+      var col=avg>=3?"var(--green)":avg>=2?"var(--cyan)":"var(--red)";
+      var cls=avg>=3.5?"ab4":avg>=2.5?"ab3":avg>=1.5?"ab2":"ab1";
+      html+='<div class="bar-row"><div class="bar-lbl">'+q.tag+'</div><div class="bar-bg2"><div class="bar-f" style="width:'+pct+'%;background:'+col+'"></div></div><div class="bar-v"><span class="ab '+cls+'">'+avg+'</span></div></div>';
+    });
+    html+='</div></div>';
+
+    // Distribution
+    html+='<div style="margin-bottom:18px"><strong style="font-size:13px;color:var(--navy)">Rating distribution per criterion</strong>';
+    QS.forEach(function(q){
+      var dist=[0,0,0,0];
+      rSubs.forEach(function(s){if(s[q.id]>=1&&s[q.id]<=4)dist[s[q.id]-1]++;});
+      var maxD=Math.max.apply(null,dist.concat([1]));
+      html+='<div style="margin-top:12px;padding:10px;background:var(--off);border-radius:8px"><div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+q.tag+' — '+q.crit+'</div><div class="dist-row">'+[1,2,3,4].map(function(v,i){var pct=Math.round(dist[i]/maxD*100);var c=v===4?"var(--green)":v===3?"var(--cyan)":v===2?"var(--amber)":"var(--red)";return '<div class="dc"><div class="db-wrap"><div class="db" style="height:'+Math.max(4,pct*0.52)+'px;background:'+c+'"></div></div><div class="dn">'+dist[i]+'</div><div class="dl">'+v+(v===1?"=Not at all":v===2?"=Slightly":v===3?"=Mostly":"=Fully")+'</div></div>';}).join('')+'</div></div>';
+    });
+    html+='</div>';
+
+    // Totals summary
+    var totals=rSubs.map(function(s){return (s.q2||0)+(s.q3||0)+(s.q4||0)+(s.q5||0)+(s.q6||0);});
+    var avgTot=totals.length?(totals.reduce(function(a,b){return a+b;},0)/totals.length).toFixed(1):"—";
+    var cnt85=totals.filter(function(t){return t>=17;}).length;
+    var cnt50=totals.filter(function(t){return t<10;}).length;
+    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"><div class="sc2"><div class="sv">'+avgTot+'<span style="font-size:14px;color:var(--muted)">/20</span></div><div class="sl2">Avg Total Score</div></div><div class="sc2"><div class="sv" style="color:var(--green)">'+cnt85+'</div><div class="sl2">Scored ≥17 (Excellent)</div></div><div class="sc2"><div class="sv" style="color:var(--red)">'+cnt50+'</div><div class="sl2">Scored &lt;10 (Needs Review)</div></div></div>';
+
+    // Reflections
+    var refs=rSubs.filter(function(s){return s.reflection&&s.reflection.trim();});
+    if(refs.length>0){
+      html+='<div style="margin-bottom:10px"><strong style="font-size:13px;color:var(--navy)">Student Reflections ('+refs.length+')</strong>';
+      refs.forEach(function(s){html+='<div style="background:var(--off);border-left:3px solid var(--cyan);padding:8px 12px;border-radius:0 7px 7px 0;margin-top:7px;font-size:12px;color:var(--text)">'+s.reflection+'</div>';});
+      html+='</div>';
+    }
+  }
+  html+='</div>';
+  html+='<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><button class="btn bgo" onclick="exportCSV()">⬇ Export All Responses (CSV)</button><span style="font-size:12px;color:var(--muted);align-self:center">All rounds · All students · Opens in Excel</span></div>';
+  html+='</div>';
+  return html;
+}
+
+window.addEventListener("DOMContentLoaded",function(){render();initFB();});
+</script>
+</body>
+</html>
